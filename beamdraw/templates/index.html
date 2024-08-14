@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beam Visualization</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h1>Beam Visualization with Iron Bars</h1>
+    <canvas id="beamCanvas" width="800" height="200"></canvas>
+
+    <script>
+        async function fetchBeamData() {
+            const response = await fetch('/beam-data/');
+            const data = await response.json();
+            return data;
+        }
+
+        function drawBeam() {
+            fetchBeamData().then(data => {
+                const canvas = document.getElementById('beamCanvas');
+                const ctx = canvas.getContext('2d');
+
+                // Convert meters to pixels
+                const beamLength = canvas.width * (data.length / 10); // Length of the beam
+                const beamWidth = canvas.height * (data.width / 1); // Width of the beam (adjusted for canvas height)
+                const barWidth = canvas.width * (data.bar_width / 10);
+                const spacing = canvas.width * (data.spacing / 10);
+                const positions = data.positions.map(pos => canvas.width * (pos / 10));
+
+                // Draw the beam
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.rect(50, 100 - (beamWidth / 2), beamLength, beamWidth); // Draw the beam as a rectangle
+                ctx.stroke();
+
+                // Draw the iron bars
+                ctx.fillStyle = 'gray';
+                positions.forEach(position => {
+                    ctx.fillRect(50 + position - (barWidth / 2), 100 - (beamWidth / 2) - 20, barWidth, beamWidth + 20); // Center and draw bars
+                });
+
+                // Draw labels and markers
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'black';
+                ctx.fillText('Beam Length: ' + data.length + 'm', 10, 20);
+                ctx.fillText('Beam Width: ' + data.width + 'm', 10, 40);
+                ctx.fillText('Iron Bars: ' + data.number_of_bars, 10, 60);
+            });
+        }
+
+        window.onload = drawBeam;
+    </script>
+</body>
+</html>
