@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beam Design Result</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            margin-top: 20px;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <h1>Beam Design Diagram</h1>
+    <p>{{ width }}</p>
+
+    <canvas id="beamCanvas" width="1000" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('beamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fetching dimensions and values from Django context
+        const span = {{ span }}; // in mm
+        const width = {{ width }}; // in mm
+        const depth = {{ depth }}; // Effective depth in mm
+        const overallDepth = {{ overall_depth }}; // Overall depth including cover in mm
+        const numBars = {{ num_bars }}; // Number of main bars
+        const barDiameter = {{ bar_diameter }}; // Diameter of main bars in mm
+        const stirrupDiameter = {{ stirrup_diameter }}; // Diameter of stirrups in mm
+        const stirrupSpacing = {{ stirrup_spacing }}; // Stirrup spacing in mm
+        const Ld = {{ Ld }}; // Development length in mm
+
+        // Scaling factor for the diagram
+        const scale = 0.05;
+
+        // Adjusted dimensions for drawing
+        const scaledSpan = span * scale;
+        const scaledWidth = width * scale;
+        const scaledDepth = depth * scale;
+        const scaledOverallDepth = overallDepth * scale;
+
+        // Calculate horizontal offset to center the diagram
+        const startX = (canvas.width - scaledSpan) / 2;
+
+        // Draw the beam
+        ctx.beginPath();
+        ctx.rect(startX, 200, scaledSpan, scaledDepth);
+        ctx.stroke();
+
+        // Draw the supports
+        const supportWidth =scaledSpan / 12; // Assumed fixed size for drawing supports
+        ctx.beginPath();
+        ctx.rect(startX, 200 + scaledDepth, supportWidth, supportWidth);
+        ctx.rect(startX + scaledSpan - supportWidth, 200 + scaledDepth, supportWidth, supportWidth);
+        ctx.stroke();
+
+
+        // Draw the stirrups
+        for (let i = startX; i <= startX + scaledSpan; i += stirrupSpacing * scale) {
+            ctx.beginPath();
+            ctx.moveTo(i, 200);
+            ctx.lineTo(i, 200 + scaledDepth);
+            ctx.stroke();
+        }
+
+        // Draw main reinforcement bars
+        const barSpacing = scaledWidth / (numBars + 1);
+        for (let i = 1; i <= numBars; i++) {
+            ctx.beginPath();
+            ctx.arc(startX + i * barSpacing, 200 + scaledDepth - scaledOverallDepth * 0.05, barDiameter * scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        {% comment %} // Draw anchor bars (represented as lines or arcs at the supports)
+        const anchorBarLength = Ld * scale; // Scale the development length for drawing
+        const anchorBarYOffset = 30; // Offset for anchor bar from the main reinforcement
+
+        // Left-side anchor bar (assuming bent into support)
+        ctx.beginPath();
+        ctx.moveTo(startX + barSpacing, 200 + scaledDepth - scaledOverallDepth * 0.05); // Start of bar
+        ctx.lineTo(startX + barSpacing - anchorBarLength, 200 + scaledDepth - anchorBarYOffset); // Bend into support
+        ctx.stroke();
+
+        // Right-side anchor bar (assuming bent into support)
+        ctx.beginPath();
+        ctx.moveTo(startX + scaledSpan - barSpacing, 200 + scaledDepth - scaledOverallDepth * 0.05); // Start of bar
+        ctx.lineTo(startX + scaledSpan + anchorBarLength, 200 + scaledDepth - anchorBarYOffset); // Bend into support
+        ctx.stroke(); {% endcomment %}
+
+
+        // Draw the labels dynamically
+        ctx.font = "16px Arial";
+        ctx.fillText(`${(span / 1000).toFixed(1)} m`, startX + scaledSpan / 2 - 30, 250);
+        ctx.fillText(`${width} mm`, startX - 70, 200 + scaledDepth / 2);
+        ctx.fillText(`${overallDepth} mm`, startX - 70, 200 + scaledDepth + 40);
+        ctx.fillText(`Ld = ${Ld.toFixed(1)} mm`, startX - 70, 200 + scaledDepth + 70);
+        ctx.fillText("Centre of support", startX - 70, 200 + scaledDepth + 100);
+
+        // Labels for reinforcement details, positioned to avoid overlap
+        ctx.fillText(`${numBars} - #${barDiameter} mm bars`, startX + scaledSpan / 2 - 50, 170);
+        ctx.fillText(`#${stirrupDiameter} mm stirrups @ ${stirrupSpacing} mm c/c`, startX + scaledSpan / 2 - 90, 190);
+
+    </script>
+</body>
+</html>
